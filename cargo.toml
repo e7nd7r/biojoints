@@ -1,5 +1,21 @@
-[workspace]
-members = [
-    "linbos-cli",
-    "linbos-back",
+[package]
+name = "linbos"
+version = "0.1.0"
+edition = "2021"
+authors = [
+    "Esteban Dorador <me@estebandorador.me>"
 ]
+
+members = [
+    "api",
+    "graph",
+    "migration",
+    "models",
+]
+
+[dependencies]
+migration = { path = "./migration" }
+api = { path = "./api"}
+graph = { path = "./graph" }
+clap = { version = "4.5.27", features = ["derive"] }
+
