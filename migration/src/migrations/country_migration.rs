@@ -25,11 +25,9 @@ impl CountryMigration {
 #[async_trait]
 impl Migrate for CountryMigration {
     async fn migrate(self: &Self) -> Result<MigrationResult, DataError> {
-        println!("{}", self.description);
-
         let result = MigrationResult {};
         let neo4j_graph = self.neo4j_graph.clone();
-        
+
         let countries = [
             Country::from((String::from("Mexico"), String::from("mx")))
         ];
@@ -53,3 +51,4 @@ impl Migrate for CountryMigration {
         Ok(result)
     }
 }
+

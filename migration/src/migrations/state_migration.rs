@@ -25,11 +25,9 @@ impl StateMigration {
 #[async_trait]
 impl Migrate for StateMigration {
     async fn migrate(self: &Self) -> Result<MigrationResult, DataError> {
-        println!("{}", self.description);
-
         let result = MigrationResult {};
         let neo4j_graph = self.neo4j_graph.clone();
-        
+
         let states = [
             State::from((String::from("mx"), String::from("Aguascalientes"), String::from("agu"))),
             State::from((String::from("mx"), String::from("Baja California"), String::from("bcn"))),
@@ -84,3 +82,4 @@ impl Migrate for StateMigration {
         Ok(result)
     }
 }
+

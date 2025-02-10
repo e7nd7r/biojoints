@@ -15,7 +15,6 @@ use migrations::{
 
 use mysql::*;
 use neo4rs::*;
-use std::sync::Arc;
 
 pub struct MigrationService {
 }
@@ -23,7 +22,7 @@ pub struct MigrationService {
 impl MigrationService {
     pub async fn run() {
         let url = "<URL here>";
-        let pool = Arc::new(Pool::new(url).expect("Error creating the pool"));
+        let pool = Pool::new(url).expect("Error creating the pool");
 
         let graph = Graph::new(
             "<neo4j url here>",
@@ -86,3 +85,4 @@ impl MigrationService {
         }
     }
 }
+

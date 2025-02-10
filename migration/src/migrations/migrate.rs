@@ -11,3 +11,4 @@ pub struct MigrationResult {
 pub trait Migrate {
     async fn migrate(self: &Self) -> Result<MigrationResult, DataError>;
 }
+

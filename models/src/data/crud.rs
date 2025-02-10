@@ -1,17 +1,17 @@
 use std::future::Future;
 
-use super::data_error::DataError;
+use super::{data_error::DataError, query_builder::QueryBuilder};
 
 pub trait Create<Conn> : Sized {
     fn create(&self, conn: Conn) -> impl Future<Output = Result<(), DataError>> + Send;
 }
 
 pub trait Fetch<Conn> : Sized {
-    fn fetch(conn: Conn) -> Result<Vec<Self>, DataError>;
+    fn fetch(conn: Conn, query_builder: &dyn QueryBuilder) -> impl Future<Output = Result<Vec<Self>, DataError>> + Send;
 }
 
 pub trait Count<Conn> : Sized {
-    fn count(&self,  conn: Conn) -> impl Future<Output = Result<i32, DataError>> + Send;
+    fn count(&self, conn: Conn) -> impl Future<Output = Result<i32, DataError>> + Send;
 }
 
 pub trait Exists<Conn: Send> : Count<Conn> {
@@ -28,5 +28,4 @@ pub trait Exists<Conn: Send> : Count<Conn> {
 pub trait List : Sized {
     fn list(&self) -> Result<Vec<Self>, DataError>;
 }
-
 

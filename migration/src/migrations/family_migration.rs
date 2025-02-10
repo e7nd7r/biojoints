@@ -1,44 +1,41 @@
-use std::sync::Arc;
 use async_trait::async_trait;
 use neo4rs::Graph;
 
 use models::{
-    data::{crud::{Create, Fetch},
-    data_error::DataError},
-    records::family::Family
+    data::{
+        crud::{Fetch, Create},
+    data_error::DataError}, mysql_impl::queries::FetchFamilyBuilder, records::family::Family
 };
 
 use super::migrate::{Migrate, MigrationResult};
 
 pub struct FamilyMigration {
     description: String,
-    mysql_conn_pool: Arc<mysql::Pool>,
+    mysql_conn_pool: mysql::Pool,
     neo4j_graph: Graph,
 }
 
 impl FamilyMigration {
-    pub fn new(desc: &str, mysql_conn_pool: Arc<mysql::Pool>, neo4j_graph: Graph) -> Self {
+    pub fn new(desc: &str, mysql_conn_pool: mysql::Pool, neo4j_graph: Graph) -> Self {
         Self {
             description: String::from(desc),
             mysql_conn_pool,
             neo4j_graph,
         }
-    }   
+    }
 }
 
 #[async_trait]
 impl Migrate for FamilyMigration {
     async fn migrate(self: &Self) -> Result<MigrationResult, DataError> {
-        println!("{}", self.description);
-
         let result = MigrationResult {};
-        let mysql_conn_pool = self.mysql_conn_pool.clone();
-        let neo4j_graph = self.neo4j_graph.clone();
 
-        let families = Family::fetch(mysql_conn_pool.clone())?;
+        let query_builder = FetchFamilyBuilder{};
+
+        let families = Family::fetch(self.mysql_conn_pool.clone(), &query_builder).await?;
 
         for family in families {
-            let result = family.create(neo4j_graph.clone()).await;
+            let result = family.create(self.neo4j_graph.clone()).await;
 
             match result {
                 Ok(_) => {

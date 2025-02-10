@@ -1,18 +1,21 @@
-use std::{result, sync::Arc};
-use mysql::prelude::*;
+use mysql::{prelude::Queryable, Value};
 
 use crate::{
-    data::{crud::Fetch, data_error::DataError},
+    data::{crud::Fetch, data_error::DataError, query_builder::QueryBuilder},
     records::class::{Class, ClassRecord},
 };
 
-impl Fetch<Arc<mysql::Pool>> for Class {
-    fn fetch(conn_pool: Arc<mysql::Pool>) -> result::Result<Vec<Self>, DataError> {
-        let conn = conn_pool.get_conn().expect("Error connection to db");
+impl Fetch<mysql::Pool> for Class {
+    async fn fetch(conn_pool: mysql::Pool, query_builder: &dyn QueryBuilder) -> Result<Vec<Self>, DataError> {
+        let mut conn = conn_pool.get_conn().expect("Error connection to db");
 
-        // Query the table and collect the results
-        let results = conn.unwrap()
-            .query("SELECT Phylum, _Class, Subphylum FROM _class")
+        let (sql, raw_params) = query_builder.build();
+
+        let mysql_params: Vec<(String, Value)> = raw_params.into_iter()
+            .map(|(k, v)| (k.to_owned(), Value::from(v)))
+            .collect();
+
+        let results = conn.exec(sql, mysql_params)
             .unwrap()
             .iter()
             .map(|val: &ClassRecord| Class::from(val.clone()))
@@ -21,3 +24,4 @@ impl Fetch<Arc<mysql::Pool>> for Class {
         Ok(results)
     }
 }
+

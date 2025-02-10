@@ -17,9 +17,9 @@ enum BioGraphCommand {
 }
 
 fn main() {
-    let cli = BioGraphCli::parse();
+    let _cli = BioGraphCli::parse();
 
-    match cli.command {
+    match Some(BioGraphCommand::Api) {
         Some(BioGraphCommand::Api) => {
             let service = ApiService::new();
             service.run();

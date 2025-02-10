@@ -1,19 +1,18 @@
-use std::sync::Arc;
 use async_trait::async_trait;
 use neo4rs::Graph;
 
-use models::{data::{crud::{Create, Fetch}, data_error::DataError}, records::phylum::Phylum};
+use models::{data::{crud::{Create, Fetch}, data_error::DataError}, mysql_impl::queries::FetchPhylumBuilder, records::phylum::Phylum};
 
 use super::migrate::{Migrate, MigrationResult};
 
 pub struct PhylumMigration {
     description: String,
-    mysql_conn_pool: Arc<mysql::Pool>,
+    mysql_conn_pool: mysql::Pool,
     neo4j_graph: Graph,
 }
 
 impl PhylumMigration {
-    pub fn new(desc: &str, mysql_conn_pool: Arc<mysql::Pool>, neo4j_graph: Graph) -> Self {
+    pub fn new(desc: &str, mysql_conn_pool: mysql::Pool, neo4j_graph: Graph) -> Self {
         Self {
             description: String::from(desc),
             mysql_conn_pool,
@@ -25,17 +24,13 @@ impl PhylumMigration {
 #[async_trait]
 impl Migrate for PhylumMigration {
     async fn migrate(self: &Self) -> Result<MigrationResult, DataError> {
-        println!("{}", self.description);
-
         let result = MigrationResult {};
 
-        let mysql_conn_pool = self.mysql_conn_pool.clone();
-        let neo4j_graph = self.neo4j_graph.clone();
-
-        let phylums = Phylum::fetch(mysql_conn_pool.clone())?;
+        let query_builder = FetchPhylumBuilder{};
+        let phylums = Phylum::fetch(self.mysql_conn_pool.clone(), &query_builder).await?;
 
         for phylum in phylums {
-            let result = phylum.create(neo4j_graph.clone()).await;
+            let result = phylum.create(self.neo4j_graph.clone()).await;
 
             match result {
                 Ok(_) => {

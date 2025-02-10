@@ -86,3 +86,9 @@ MATCH (s:Specie)-[:LOCATED_IN]->(st:State {code: "col"})
 MATCH path = (s)-[:BELONGS_TO*0..]->(n)
 RETURN n, st
 
+## Roadmap
+
+[ ] Migrate taxonomies.
+[ ] Configuration files.
+[ ] App builder and endpoint creators.
+[ ] CRUD endpoints.

@@ -1,5 +1,8 @@
 use std::convert::From;
 
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize)]
 pub struct Kingdom {
     pub kingdom: String,
     pub superkingdom: String,

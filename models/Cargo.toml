@@ -7,4 +7,4 @@ edition = "2021"
 mysql = "25.0.1"
 neo4rs = "0.8.0"
 chrono = "0.4.38"
-
+serde = { version = "1.0", features = ["derive"] }

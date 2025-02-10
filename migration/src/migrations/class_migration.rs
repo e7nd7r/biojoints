@@ -2,17 +2,17 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use neo4rs::Graph;
 
-use models::{data::{crud::{Create, Fetch}, data_error::DataError}, records::class::Class};
+use models::{data::{crud::{Create, Fetch}, data_error::DataError, query_builder}, mysql_impl::queries::FetchClassBuilder, records::class::Class};
 use super::migrate::{Migrate, MigrationResult};
 
 pub struct ClassMigration {
     description: String,
-    mysql_conn_pool: Arc<mysql::Pool>,
+    mysql_conn_pool: mysql::Pool,
     neo4j_graph: Graph,
 }
 
 impl ClassMigration {
-    pub fn new(desc: &str, mysql_conn_pool: Arc<mysql::Pool>, neo4j_graph: Graph) -> Self {
+    pub fn new(desc: &str, mysql_conn_pool: mysql::Pool, neo4j_graph: Graph) -> Self {
         Self {
             description: String::from(desc),
             mysql_conn_pool,
@@ -24,16 +24,13 @@ impl ClassMigration {
 #[async_trait]
 impl Migrate for ClassMigration {
     async fn migrate(self: &Self) -> Result<MigrationResult, DataError> {
-        println!("{}", self.description);
-
         let result = MigrationResult {};
-        let mysql_conn_pool = self.mysql_conn_pool.clone();
-        let neo4j_graph = self.neo4j_graph.clone();
+        let query_builder = FetchClassBuilder{};
 
-        let classes = Class::fetch(mysql_conn_pool.clone())?;
+        let classes = Class::fetch(self.mysql_conn_pool.clone(), &query_builder).await?;
 
         for class in classes {
-            let result = class.create(neo4j_graph.clone()).await;
+            let result = class.create(self.neo4j_graph.clone()).await;
 
             match result {
                 Ok(_) => {

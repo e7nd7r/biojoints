@@ -1,29 +1,27 @@
-use std::sync::Arc;
 use async_trait::async_trait;
 use neo4rs::Graph;
 
 use models::{
     data::{crud::{Create, Fetch},
-    data_error::DataError},
-    records::genus::Genus
+        data_error::DataError}, mysql_impl::queries::FetchGenusBuilder, records::genus::Genus,
 };
 
 use super::migrate::{Migrate, MigrationResult};
 
 pub struct GenusMigration {
     description: String,
-    mysql_conn_pool: Arc<mysql::Pool>,
+    mysql_conn_pool: mysql::Pool,
     neo4j_graph: Graph,
 }
 
 impl GenusMigration {
-    pub fn new(desc: &str, mysql_conn_pool: Arc<mysql::Pool>, neo4j_graph: Graph) -> Self {
+    pub fn new(desc: &str, mysql_conn_pool: mysql::Pool, neo4j_graph: Graph) -> Self {
         Self {
             description: String::from(desc),
             mysql_conn_pool,
             neo4j_graph,
         }
-    }   
+    }
 }
 
 #[async_trait]
@@ -32,13 +30,12 @@ impl Migrate for GenusMigration {
         println!("{}", self.description);
 
         let result = MigrationResult {};
-        let mysql_conn_pool = self.mysql_conn_pool.clone();
-        let neo4j_graph = self.neo4j_graph.clone();
 
-        let genuses = Genus::fetch(mysql_conn_pool.clone())?;
+        let query_builder = FetchGenusBuilder{};
+        let genuses = Genus::fetch(self.mysql_conn_pool.clone(), &query_builder).await?;
 
         for genus in genuses {
-            let result = genus.create(neo4j_graph.clone()).await;
+            let result = genus.create(self.neo4j_graph.clone()).await;
 
             match result {
                 Ok(_) => {
@@ -56,3 +53,4 @@ impl Migrate for GenusMigration {
         Ok(result)
     }
 }
+

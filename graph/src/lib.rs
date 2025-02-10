@@ -5,7 +5,6 @@ use async_graphql_actix_web::GraphQL;
 pub struct GraphService {
 }
 
-
 pub struct SpecieRecord {
     pub name: String,
     pub genus: String,

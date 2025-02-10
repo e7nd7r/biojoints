@@ -7,3 +7,5 @@ pub mod genus;
 pub mod specie;
 pub mod country;
 pub mod state;
+pub mod queries;
+

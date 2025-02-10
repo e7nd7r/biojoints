@@ -4,20 +4,19 @@ use neo4rs::Graph;
 
 use models::{
     data::{crud::{Create, Fetch},
-        data_error::DataError},
-    records::specie::Specie, neo4j_impl::specie::SpecieOps
+        data_error::DataError, query_builder}, mysql_impl::queries::FetchSpecieBuilder, neo4j_impl::specie::SpecieOps, records::specie::Specie
 };
 
 use super::migrate::{Migrate, MigrationResult};
 
 pub struct SpecieMigration {
     description: String,
-    mysql_conn_pool: Arc<mysql::Pool>,
+    mysql_conn_pool: mysql::Pool,
     neo4j_graph: Graph,
 }
 
 impl SpecieMigration {
-    pub fn new(desc: &str, mysql_conn_pool: Arc<mysql::Pool>, neo4j_graph: Graph) -> Self {
+    pub fn new(desc: &str, mysql_conn_pool: mysql::Pool, neo4j_graph: Graph) -> Self {
         Self {
             description: String::from(desc),
             mysql_conn_pool,
@@ -29,16 +28,12 @@ impl SpecieMigration {
 #[async_trait]
 impl Migrate for SpecieMigration {
     async fn migrate(self: &Self) -> Result<MigrationResult, DataError> {
-        println!("{}", self.description);
-
         let result = MigrationResult {};
-        let mysql_conn_pool = self.mysql_conn_pool.clone();
-        let neo4j_graph = self.neo4j_graph.clone();
-
-        let species = Specie::fetch(mysql_conn_pool.clone())?;
+        let query_builder = FetchSpecieBuilder{};
+        let species = Specie::fetch(self.mysql_conn_pool.clone(), &query_builder).await?;
 
         for specie in species {
-            let result = specie.create(neo4j_graph.clone()).await;
+            let result = specie.create(self.neo4j_graph.clone()).await;
 
             match result {
                 Ok(_) => {
@@ -52,7 +47,7 @@ impl Migrate for SpecieMigration {
                 other => other,
             }?;
 
-            let result = specie.create_dist_nodes(neo4j_graph.clone()).await;
+            let result = specie.create_dist_nodes(self.neo4j_graph.clone()).await;
 
             match result {
                 Ok(_) => {
@@ -66,3 +61,4 @@ impl Migrate for SpecieMigration {
         Ok(result)
     }
 }
+

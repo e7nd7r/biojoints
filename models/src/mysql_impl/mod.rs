@@ -1,3 +1,4 @@
+pub mod queries;
 pub mod kingdom;
 pub mod phylum;
 pub mod class;

@@ -1,44 +1,39 @@
-use std::sync::Arc;
 use async_trait::async_trait;
 use neo4rs::Graph;
 
 use models::{
     data::{crud::{Create, Fetch},
-    data_error::DataError},
-    records::order::Order
+    data_error::DataError}, mysql_impl::queries::FetchOrderBuilder, records::order::Order
 };
 
 use super::migrate::{Migrate, MigrationResult};
 
 pub struct OrderMigration {
     description: String,
-    mysql_conn_pool: Arc<mysql::Pool>,
+    mysql_conn_pool: mysql::Pool,
     neo4j_graph: Graph,
 }
 
 impl OrderMigration {
-    pub fn new(desc: &str, mysql_conn_pool: Arc<mysql::Pool>, neo4j_graph: Graph) -> Self {
+    pub fn new(desc: &str, mysql_conn_pool: mysql::Pool, neo4j_graph: Graph) -> Self {
         Self {
             description: String::from(desc),
             mysql_conn_pool,
             neo4j_graph,
         }
-    }   
+    }
 }
 
 #[async_trait]
 impl Migrate for OrderMigration {
     async fn migrate(self: &Self) -> Result<MigrationResult, DataError> {
-        println!("{}", self.description);
-
         let result = MigrationResult {};
-        let mysql_conn_pool = self.mysql_conn_pool.clone();
-        let neo4j_graph = self.neo4j_graph.clone();
+        let query_builder = FetchOrderBuilder{};
 
-        let orders = Order::fetch(mysql_conn_pool.clone())?;
+        let orders = Order::fetch(self.mysql_conn_pool.clone(), &query_builder).await?;
 
         for order in orders {
-            let result = order.create(neo4j_graph.clone()).await;
+            let result = order.create(self.neo4j_graph.clone()).await;
 
             match result {
                 Ok(_) => {
@@ -56,3 +51,4 @@ impl Migrate for OrderMigration {
         Ok(result)
     }
 }
+
