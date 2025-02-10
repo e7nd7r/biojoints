@@ -18,7 +18,7 @@ impl PhylumMigration {
             mysql_conn_pool,
             neo4j_graph,
         }
-    }   
+    }
 }
 
 #[async_trait]
@@ -48,3 +48,4 @@ impl Migrate for PhylumMigration {
         Ok(result)
     }
 }
+

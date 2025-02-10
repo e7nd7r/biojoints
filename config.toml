@@ -1,0 +1,11 @@
+[mysql]
+db_host = ""
+db_user = ""
+db_password = ""
+db_name = ""
+
+[neo4j]
+db_host = ""
+db_user = ""
+db_password = ""
+

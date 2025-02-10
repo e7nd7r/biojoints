@@ -1,10 +1,11 @@
-use std::sync::Arc;
 use async_trait::async_trait;
 use neo4rs::Graph;
 
 use models::{
-    data::{crud::{Create, Fetch},
-        data_error::DataError, query_builder}, mysql_impl::queries::FetchSpecieBuilder, neo4j_impl::specie::SpecieOps, records::specie::Specie
+    data::{
+        crud::{Create, Fetch},
+        data_error::DataError
+    }, mysql_impl::queries::FetchSpecieBuilder, neo4j_impl::specie::SpecieOps, records::specie::Specie
 };
 
 use super::migrate::{Migrate, MigrationResult};

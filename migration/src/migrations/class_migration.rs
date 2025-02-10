@@ -1,8 +1,7 @@
-use std::sync::Arc;
 use async_trait::async_trait;
 use neo4rs::Graph;
 
-use models::{data::{crud::{Create, Fetch}, data_error::DataError, query_builder}, mysql_impl::queries::FetchClassBuilder, records::class::Class};
+use models::{data::{crud::{Create, Fetch}, data_error::DataError}, mysql_impl::queries::FetchClassBuilder, records::class::Class};
 use super::migrate::{Migrate, MigrationResult};
 
 pub struct ClassMigration {

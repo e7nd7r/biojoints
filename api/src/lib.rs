@@ -1,25 +1,12 @@
 mod handlers;
+mod service;
 
 use actix_web::{web::Data, App, HttpServer};
 
 use handlers::*;
-use mysql::Pool;
-use neo4rs::Graph;
+use service::service_bundle::ServiceBundle;
 
 pub struct ApiService {
-}
-
-async fn create_pools() -> (Pool, Graph) {
-    let url = "";
-    let pool = Pool::new(url).expect("Error creating the pool");
-
-    let graph = Graph::new(
-        "",
-        "",
-        ""
-    ).await.unwrap();
-
-    (pool, graph)
 }
 
 impl ApiService {
@@ -28,16 +15,15 @@ impl ApiService {
     }
 
     pub fn run(self) {
-        // mysql://root:password@localhost:3307/db_name
         let system = actix_web::rt::System::new();
-        let (pool, graph) = system.block_on(create_pools());
+        let config = service::config::ApiConfig::from_toml().unwrap();
+        let service_bundle = system.block_on(ServiceBundle::new(config)).unwrap();
 
         let _ = actix_web::rt::System::new()
             .block_on(
                 HttpServer::new(move || {
                     App::new()
-                        .app_data(Data::new(pool.clone()))
-                        .app_data(Data::new(graph.clone()))
+                        .app_data(Data::new(service_bundle.clone()))
                         .service(kingdom::list_kingdom) 
                 })
                 .bind("127.0.0.1:8080")
