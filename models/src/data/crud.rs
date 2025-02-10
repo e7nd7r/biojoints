@@ -3,7 +3,7 @@ use std::future::Future;
 use super::{data_error::DataError, query_builder::QueryBuilder};
 
 pub trait Create<Conn> : Sized {
-    fn create(&self, conn: Conn) -> impl Future<Output = Result<(), DataError>> + Send;
+    fn create(&self, conn: Conn) -> impl Future<Output = Result<Self, DataError>> + Send;
 }
 
 pub trait Fetch<Conn> : Sized {

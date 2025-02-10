@@ -33,9 +33,9 @@ impl Migrate for OrderMigration {
         let orders = Order::fetch(self.mysql_conn_pool.clone(), &query_builder).await?;
 
         for order in orders {
-            let result = order.create(self.neo4j_graph.clone()).await;
+            let insert_result = order.create(self.neo4j_graph.clone()).await;
 
-            match result {
+            match insert_result {
                 Ok(_) => {
                     println!("Class: {}, inserted correctly!", order.class);
                     Ok(())
@@ -44,7 +44,10 @@ impl Migrate for OrderMigration {
                     println!("Class {} already exists. Will be ignored.", order.class);
                     Ok(())
                 },
-                other => other,
+                _ => {
+                    println!("Class: {}, failed to insert!", order.class);
+                    Err(DataError::QueryError("Failed to insert class".to_string()))
+                }
             }?;
         }
 

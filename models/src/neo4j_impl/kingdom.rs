@@ -1,5 +1,6 @@
 use std::result;
 use neo4rs::{query, Graph, Node};
+use uuid::Uuid;
 
 use crate::{
     data::{
@@ -11,10 +12,12 @@ use crate::{
 
 impl From<Node> for Kingdom {
     fn from(node: Node) -> Self {
+        let id: Uuid = node.get("id").unwrap();
         let kingdom: String = node.get("kingdom").unwrap();
         let superkingdom: String = node.get("superkingdom").unwrap();
 
         Self {
+            id: Some(id),
             kingdom: kingdom.clone(),
             superkingdom: superkingdom.clone()
         }
@@ -67,24 +70,30 @@ impl Count<Graph> for Kingdom {
 }
 
 impl Create<Graph> for Kingdom {
-    async fn create(&self, conn: Graph) -> result::Result<(), DataError> {
+    async fn create(&self, conn: Graph) -> result::Result<Kingdom, DataError> {
         if self.exists(conn.clone()).await? {
             return Err(DataError::AlreadyExist(format!("{} already exists", self.kingdom)));
         }
 
+        let id = Uuid::new_v4();
+
         let query = query("
-CREATE (n:Kingdom {kingdom: $kingdom, superkingdom: $superkingdom})
-RETURN n
-")
+            CREATE (n:Kingdom {id: $id, kingdom: $kingdom, superkingdom: $superkingdom})
+            RETURN n
+        ")
+            .param("id", id.to_string())
             .param("kingdom", self.kingdom.clone())   
             .param("superkingdom", self.superkingdom.clone());
 
         let mut result = conn.execute(query).await.unwrap();
 
-        if let Ok(Some(_)) = result.next().await {
-            return Ok(());
+        if let Ok(Some(row)) = result.next().await {
+            let node:Node = row.get("n").unwrap();
+
+            return Ok(Kingdom::from(node));
         }
 
         Err(DataError::NotInsertedEntity(format!("Entity was not inserted!")))
     }
 }
+

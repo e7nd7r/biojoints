@@ -1,5 +1,5 @@
-use actix_web::{get, web, Error, Responder};
-use models::{data::crud::Fetch, neo4j_impl::queries::FetchKingdomQueryBuilder, records::kingdom::Kingdom};
+use actix_web::{get, post, web, Error, Responder};
+use models::{data::crud::{Create, Fetch}, neo4j_impl::queries::FetchKingdomQueryBuilder, records::kingdom::Kingdom};
 use serde::{Deserialize, Serialize};
 
 use crate::service::service_bundle::ServiceBundle;
@@ -20,5 +20,13 @@ pub async fn list_kingdom(bundle: web::Data<ServiceBundle>, _query: web::Query<K
     let records = records.expect("Failed to fetch kingdoms");
 
     Ok(web::Json(records))
+}
+
+#[post("/kingdom")]
+pub async fn create_kingdom(bundle: web::Data<ServiceBundle>, kingdom: web::Json<Kingdom>) -> Result<impl Responder, Error> {
+    println!("{:?}", kingdom);
+    let kingdom = kingdom.create(bundle.graph.clone()).await.expect("Failed to create kingdom");
+
+    Ok(web::Json(kingdom))
 }
 

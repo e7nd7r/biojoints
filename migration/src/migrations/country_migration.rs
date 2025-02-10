@@ -33,18 +33,18 @@ impl Migrate for CountryMigration {
         ];
 
         for country in countries {
-            let result = country.create(neo4j_graph.clone()).await;
+            let insert_res = country.create(neo4j_graph.clone()).await;
 
-            match result {
-                Ok(_) => {
-                    println!("Country: {}, inserted correctly!", country.name);
+            match insert_res {
+                Ok(node) => {
+                    println!("Country: {}, inserted correctly!", node.name);
                     Ok(())
                 },
                 Err(DataError::AlreadyExist(_)) => {
                     println!("Country {} already exists. Will be ignored.", country.name);
                     Ok(())
                 },
-                other => other,
+                _ => Err(DataError::QueryError("Error inserting country".to_string())),
             }?;
         }
 

@@ -24,6 +24,7 @@ impl ApiService {
                 HttpServer::new(move || {
                     App::new()
                         .app_data(Data::new(service_bundle.clone()))
+                        .service(kingdom::create_kingdom)
                         .service(kingdom::list_kingdom) 
                 })
                 .bind("127.0.0.1:8080")

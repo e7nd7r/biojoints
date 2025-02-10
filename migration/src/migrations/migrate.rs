@@ -4,7 +4,6 @@ use models::data::data_error::DataError;
 
 #[derive(Debug)]
 pub struct MigrationResult {
-    
 }
 
 #[async_trait]

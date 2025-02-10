@@ -29,18 +29,18 @@ impl Migrate for KingdomMigration {
         let kingdoms = Kingdom::fetch(self.mysql_conn_pool.clone(), &query_builder).await?;
 
         for kingdom in kingdoms {
-            let result = kingdom.create(self.neo4j_graph.clone()).await;
+            let insert_res = kingdom.create(self.neo4j_graph.clone()).await;
 
-            match result {
-                Ok(_) => {
-                    println!("Kingdom: {}, inserted correctly!", kingdom.kingdom);
+            match insert_res {
+                Ok(node) => {
+                    println!("Kingdom: {}, inserted correctly!", node.kingdom);
                     Ok(())
                 },
                 Err(DataError::AlreadyExist(_)) => {
                     println!("Kingdom {} already exists. Will be ignored.", kingdom.kingdom);
                     Ok(())
                 },
-                other => other,
+                _ => Err(DataError::QueryError("Error inserting kingdom".to_string())),
             }?;
         }
 

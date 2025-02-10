@@ -64,9 +64,9 @@ impl Migrate for StateMigration {
         ];
 
         for state in states {
-            let result = state.create(neo4j_graph.clone()).await;
+            let insert_res = state.create(neo4j_graph.clone()).await;
 
-            match result {
+            match insert_res {
                 Ok(_) => {
                     println!("State: {}, inserted correctly!", state.name);
                     Ok(())
@@ -75,7 +75,10 @@ impl Migrate for StateMigration {
                     println!("State {} already exists. Will be ignored.", state.name);
                     Ok(())
                 },
-                other => other,
+                _ => {
+                    println!("State: {}, failed to insert!", state.name);
+                    Err(DataError::QueryError("Failed to insert state".to_string()))
+                },
             }?;
         }
 

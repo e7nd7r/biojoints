@@ -29,21 +29,25 @@ impl Migrate for ClassMigration {
         let classes = Class::fetch(self.mysql_conn_pool.clone(), &query_builder).await?;
 
         for class in classes {
-            let result = class.create(self.neo4j_graph.clone()).await;
+            let insert_res = class.create(self.neo4j_graph.clone()).await;
 
-            match result {
-                Ok(_) => {
-                    println!("Class: {}, inserted correctly!", class.class);
+            match insert_res {
+                Ok(node) => {
+                    println!("Class: {}, inserted correctly!", node.class);
                     Ok(())
                 },
                 Err(DataError::AlreadyExist(_)) => {
                     println!("Class {} already exists. Will be ignored.", class.class);
                     Ok(())
                 },
-                other => other,
+                _ => {
+                    println!("Class: {}, failed to insert!", class.class);
+                    Err(DataError::QueryError("Failed to insert class".to_string()))
+                }
             }?;
         }
 
         Ok(result)
     }
 }
+

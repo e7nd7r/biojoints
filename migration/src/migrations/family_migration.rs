@@ -35,10 +35,10 @@ impl Migrate for FamilyMigration {
         let families = Family::fetch(self.mysql_conn_pool.clone(), &query_builder).await?;
 
         for family in families {
-            let result = family.create(self.neo4j_graph.clone()).await;
+            let insert_res = family.create(self.neo4j_graph.clone()).await;
 
-            match result {
-                Ok(_) => {
+            match insert_res {
+                Ok(node) => {
                     println!("Family: {}, inserted correctly!", family.family);
                     Ok(())
                 },
@@ -46,7 +46,10 @@ impl Migrate for FamilyMigration {
                     println!("Family {} already exists. Will be ignored.", family.family);
                     Ok(())
                 },
-                other => other,
+                _ => {
+                    println!("Family: {}, failed to insert!", family.family);
+                    Err(DataError::QueryError("Failed to insert family".to_string()))
+                }
             }?;
         }
 

@@ -34,23 +34,23 @@ impl Migrate for SpecieMigration {
         let species = Specie::fetch(self.mysql_conn_pool.clone(), &query_builder).await?;
 
         for specie in species {
-            let result = specie.create(self.neo4j_graph.clone()).await;
+            let insert_res = specie.create(self.neo4j_graph.clone()).await;
 
-            match result {
-                Ok(_) => {
-                    println!("Specie: {}, inserted correctly!", specie.specie_name);
+            match insert_res {
+                Ok(node) => {
+                    println!("Specie: {}, inserted correctly!", node.specie_name);
                     Ok(())
                 },
                 Err(DataError::AlreadyExist(_)) => {
                     println!("Specie {} already exists. Will be ignored.", specie.specie_name);
                     Ok(())
                 },
-                other => other,
+                _ => Err(DataError::QueryError("Error inserting specie".to_string())),
             }?;
 
-            let result = specie.create_dist_nodes(self.neo4j_graph.clone()).await;
+            let insert_res = specie.create_dist_nodes(self.neo4j_graph.clone()).await;
 
-            match result {
+            match insert_res {
                 Ok(_) => {
                     println!("Specie: {}, state nodes inserted correctly!", specie.specie_name);
                     Ok(())

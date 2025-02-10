@@ -1,5 +1,6 @@
 use std::convert::From;
 
+#[derive(Debug)]
 pub struct Country {
     pub name: String,
     pub code: String,

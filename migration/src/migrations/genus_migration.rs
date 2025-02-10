@@ -35,9 +35,9 @@ impl Migrate for GenusMigration {
         let genuses = Genus::fetch(self.mysql_conn_pool.clone(), &query_builder).await?;
 
         for genus in genuses {
-            let result = genus.create(self.neo4j_graph.clone()).await;
+            let insert_res = genus.create(self.neo4j_graph.clone()).await;
 
-            match result {
+            match insert_res {
                 Ok(_) => {
                     println!("Genus: {}, inserted correctly!", genus.genus);
                     Ok(())
@@ -46,7 +46,10 @@ impl Migrate for GenusMigration {
                     println!("Genus {} already exists. Will be ignored.", genus.genus);
                     Ok(())
                 },
-                other => other,
+                _ => {
+                    println!("Genus: {}, failed to insert!", genus.genus);
+                    Err(DataError::QueryError("Failed to insert genus".to_string()))
+                }
             }?;
         }
 

@@ -1,5 +1,5 @@
 use std::result;
-use neo4rs::{query, Graph};
+use neo4rs::{query, Graph, Node};
 
 use crate::{
     data::{crud::{Count, Create, Exists},
@@ -7,33 +7,45 @@ use crate::{
     records::country::Country
 };
 
+impl From<Node> for Country {
+    fn from(node: Node) -> Self {
+        let name: String = node.get("name").unwrap();
+        let code: String = node.get("code").unwrap();
+
+        Self {
+            name: name.clone(),
+            code: code.clone()
+        }
+    }
+}
+
 impl Exists<Graph> for Country {}
 
 impl Count<Graph> for Country {
     async fn count(&self, conn: Graph) -> result::Result<i32, DataError> {
         let query = query("MATCH (n:Country {name: $name}) RETURN COUNT(n) as count")
             .param("name", self.name.clone());
-        
+
         let result = conn
             .execute(query)
             .await
             .unwrap()
             .next()
             .await;
-        
+
         match result {
             Ok(Some(row)) => {
                 let count:i32 = row.get("count").unwrap();
                 Ok(count)
             },
             Err(err) => Err(DataError::QueryError(format!("${err}"))),
-            _ => Err(DataError::QueryError(format!("Unexpectely return no row."))),
-        }    
+            _ => Err(DataError::QueryError("Unexpectely return no row.".to_string())),
+        }
     }
 }
 
 impl Create<Graph> for Country {
-    async fn create(&self, conn: Graph) -> result::Result<(), DataError> {
+    async fn create(&self, conn: Graph) -> result::Result<Country, DataError> {
         if self.exists(conn.clone()).await? {
             return Err(DataError::AlreadyExist(format!("{} already exists", self.name)));
         }
@@ -46,10 +58,15 @@ impl Create<Graph> for Country {
             .param("code", self.code.clone());
 
         let mut result = conn.execute(query).await.unwrap();
-        
+
         match result.next().await {
-            Ok(_) => return Ok(()),
-            Err(err) => Err(DataError::NotInsertedEntity(format!("Entity was not inserted! | {}", err)))
+            Ok(Some(row)) => {
+                let node: Node = row.get("n").unwrap();
+
+                Ok(Country::from(node))
+            },
+            Err(err) => Err(DataError::NotInsertedEntity(format!("Entity was not inserted! | {}", err))),
+            _ => Err(DataError::NotInsertedEntity("Entity was not inserted!".to_string()))
         }
     }
 }

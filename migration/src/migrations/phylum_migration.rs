@@ -30,18 +30,21 @@ impl Migrate for PhylumMigration {
         let phylums = Phylum::fetch(self.mysql_conn_pool.clone(), &query_builder).await?;
 
         for phylum in phylums {
-            let result = phylum.create(self.neo4j_graph.clone()).await;
+            let insert_res = phylum.create(self.neo4j_graph.clone()).await;
 
-            match result {
-                Ok(_) => {
-                    println!("Phylum: {}, inserted correctly!", phylum.phylum);
+            match insert_res {
+                Ok(node) => {
+                    println!("Phylum: {}, inserted correctly!", node.phylum);
                     Ok(())
                 },
                 Err(DataError::AlreadyExist(_)) => {
                     println!("Phylum {} already exists. Will be ignored.", phylum.phylum);
                     Ok(())
                 },
-                other => other,
+                _ => {
+                    println!("Phylum: {}, failed to insert!", phylum.phylum);
+                    Err(DataError::QueryError("Failed to insert phylum".to_string()))
+                }
             }?;
         }
 
