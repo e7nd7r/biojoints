@@ -19,6 +19,13 @@ impl ApiService {
         let config = service::config::ApiConfig::from_toml().unwrap();
         let service_bundle = system.block_on(ServiceBundle::new(config)).unwrap();
 
+        let result = service_bundle.subscribe_logger();
+
+        if let Err(e) = result {
+            eprintln!("Failed to subscribe logger: {}", e);
+            panic!("Failed to subscribe logger");
+        }
+
         let _ = actix_web::rt::System::new()
             .block_on(
                 HttpServer::new(move || {

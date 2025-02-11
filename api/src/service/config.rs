@@ -17,9 +17,24 @@ pub struct Neo4jConfig {
 }
 
 #[derive(Deserialize, Clone)]
+pub struct LokiConfig {
+    pub enabled: bool,
+    pub host: String,
+    pub port: u16,
+}
+
+#[derive(Deserialize, Clone)]
+pub struct TraceConfig {
+    pub enabled: bool,
+    pub level:String,
+    pub loki: LokiConfig,
+}
+
+#[derive(Deserialize, Clone)]
 pub struct ApiConfig {
     pub mysql: MysqlConfig,
     pub neo4j: Neo4jConfig,
+    pub trace: TraceConfig,
 }
 
 impl ApiConfig {
