@@ -1,0 +1,13 @@
+[package]
+name = "cloud"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+chrono = { version = "0.4.31", features = ["serde"] }
+aws-sdk-s3 = "1.74.0"
+aws-config = {version = "1.5.16", features = ["behavior-version-latest"]}
+async-trait = "0.1.86"
+aws-smithy-types-convert = { version = "0.60.8", features = ["convert-chrono"] }
+aws-smithy-types = "1.2.13"
+
