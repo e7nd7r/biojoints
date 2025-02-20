@@ -1,29 +1,29 @@
-use std::future::Future;
-
-use mysql::{prelude::*, Value};
-
 use crate::{
-    data::{crud::Fetch, data_error::DataError, query_builder::QueryBuilder},
-    records::family::{Family, FamilyRecord},
+    data::data_error::DataError,
+    records::family::Family,
 };
 
-impl Fetch<mysql::Pool> for Family {
-    async fn fetch(conn_pool: mysql::Pool, query_builder: &dyn QueryBuilder) -> Result<Vec<Self>, DataError> {
-        let mut conn = conn_pool.get_conn().expect("Error connection to db");
+use super::{query::QueryBuilder, relational_layer::RelationalOps};
 
-        let (sql, raw_params) = query_builder.build();
+pub struct FamilyModel<Conn> {
+    conn: Conn,
+}
 
-        let mysql_params: Vec<(String, Value)>  = raw_params.into_iter()
-            .map(|(k, v)| (k.to_owned(), Value::from(v)))
-            .collect();
+impl <Conn: RelationalOps> FamilyModel<Conn> {
+    pub fn new(conn: Conn) -> Self {
+        Self {
+            conn,
+        }
+    }
 
-        let results = conn.exec(sql, mysql_params)
-            .unwrap()
-            .iter()
-            .map(|val: &FamilyRecord| Family::from(val.clone()))
-            .collect();
+    pub async fn fetch(&self) -> Result<Vec<Family>, DataError> {
+        let query = QueryBuilder::new()
+            .query("SELECT _Order, Family, Suborder, Superfamily FROM _family")
+            .build();
 
-        Ok(results)
+        let records = self.conn.clone().fetch_all(query).await?;
+
+        Ok(records)
     }
 }
 

@@ -1,23 +1,12 @@
-use std::convert::From;
+use mysql::prelude::FromRow;
+use serde::{Deserialize, Serialize};
 
+#[derive(Clone, Serialize, Deserialize, FromRow)]
 pub struct Family {
+    pub id: Option<uuid::Uuid>,
     pub order: String,
     pub family: String,
     pub suborder: String,
     pub superfamily: String,
 }
 
-pub type FamilyRecord = (String, String, String, String);
-
-impl From<FamilyRecord> for Family {
-    fn from(value: FamilyRecord) -> Self {
-        let (order, family, suborder, superfamily) = value;
-
-        Self {
-            order,
-            family,
-            suborder,
-            superfamily,
-        }
-    }
-}

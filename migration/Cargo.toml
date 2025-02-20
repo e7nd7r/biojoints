@@ -7,7 +7,7 @@ edition = "2021"
 models = { path = "../models" }
 async-trait = "0.1.81"
 chrono = "0.4.38"
-mysql = "25.0.1"
+mysql = "26.0.0"
 neo4rs = "0.8.0"
 tokio = { version = "1.39.3", features = ["full"] } # For async runtime
 

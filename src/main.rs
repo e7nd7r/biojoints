@@ -1,6 +1,7 @@
 use api::ApiService;
 use clap::{Parser, Subcommand};
 use graph::GraphService;
+use migration::MigrationService;
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -29,7 +30,8 @@ fn main() {
             service.run();
         }
         Some(BioGraphCommand::Migration) => {
-            println!("Running Migration")
+            let service = MigrationService::new();
+            service.run();
         }
         _ => {}
     }

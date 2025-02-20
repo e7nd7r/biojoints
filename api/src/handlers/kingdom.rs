@@ -1,5 +1,5 @@
 use actix_web::{get, post, web, Error, Responder};
-use models::{data::crud::{Create, Fetch}, neo4j_impl::queries::FetchKingdomQueryBuilder, records::kingdom::Kingdom};
+use models::{neo4j_impl::{graph_layer::GraphLayer, kingdom::KingdomModel}, records::kingdom::Kingdom};
 use serde::{Deserialize, Serialize};
 
 use crate::service::service_bundle::ServiceBundle;
@@ -14,8 +14,10 @@ struct KingdomQuery {
 
 #[get("/kingdom")]
 pub async fn list_kingdom(bundle: web::Data<ServiceBundle>, _query: web::Query<KingdomQuery>) -> Result<impl Responder, Error> {
-    let builder = FetchKingdomQueryBuilder{};
-    let records = Kingdom::fetch(bundle.graph.clone(), &builder).await;
+    let graph_layer = GraphLayer::new(bundle.graph.clone());
+    let model = KingdomModel::new(graph_layer);
+
+    let records = model.fetch().await;
 
     let records = records.expect("Failed to fetch kingdoms");
 
@@ -24,8 +26,11 @@ pub async fn list_kingdom(bundle: web::Data<ServiceBundle>, _query: web::Query<K
 
 #[post("/kingdom")]
 pub async fn create_kingdom(bundle: web::Data<ServiceBundle>, kingdom: web::Json<Kingdom>) -> Result<impl Responder, Error> {
-    println!("{:?}", kingdom);
-    let kingdom = kingdom.create(bundle.graph.clone()).await.expect("Failed to create kingdom");
+    let graph_layer = GraphLayer::new(bundle.graph.clone());
+    let model = KingdomModel::new(graph_layer);
+    let kingdom = kingdom.into_inner();
+
+    let kingdom = model.create(kingdom).await.expect("Failed to create kingdom");
 
     Ok(web::Json(kingdom))
 }

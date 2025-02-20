@@ -1,15 +1,6 @@
 use serde::Deserialize;
 
 #[derive(Deserialize, Clone)]
-pub struct MysqlConfig {
-    pub db_host: String,
-    pub db_port: u16,
-    pub db_user: String,
-    pub db_pass: String,
-    pub db_name: String,
-}
-
-#[derive(Deserialize, Clone)]
 pub struct Neo4jConfig {
     pub db_host: String,
     pub db_user: String,
@@ -32,7 +23,6 @@ pub struct TraceConfig {
 
 #[derive(Deserialize, Clone)]
 pub struct ApiConfig {
-    pub mysql: MysqlConfig,
     pub neo4j: Neo4jConfig,
     pub trace: TraceConfig,
 }

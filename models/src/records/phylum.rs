@@ -1,21 +1,12 @@
-use std::convert::From;
+use mysql::prelude::FromRow;
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
+#[derive(Clone, Serialize, Deserialize, FromRow)]
 pub struct Phylum {
+    pub id : Option<Uuid>,
     pub kingdom: String,
     pub phylum: String,
     pub subkingdom: String,
 }
 
-pub type PhylumRecord = (String, String, String);
-
-impl From<&PhylumRecord> for Phylum {
-    fn from(value: &PhylumRecord) -> Self {
-        let (kingdom, phylum, subkingdom) = value;
-        
-        Self {
-            kingdom: kingdom.clone(),
-            phylum: phylum.clone(),
-            subkingdom: subkingdom.clone(),
-        }
-    }
-}

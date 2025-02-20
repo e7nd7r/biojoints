@@ -1,99 +1,70 @@
 use std::result;
-use neo4rs::{query, Graph, Node};
 use uuid::Uuid;
 
 use crate::{
-    data::{
-        crud::{Count, Create, Exists, Fetch},
-        data_error::DataError, query_builder::QueryBuilder
-    },
+    data::data_error::DataError,
     records::kingdom::Kingdom
 };
 
-impl From<Node> for Kingdom {
-    fn from(node: Node) -> Self {
-        let id: Uuid = node.get("id").unwrap();
-        let kingdom: String = node.get("kingdom").unwrap();
-        let superkingdom: String = node.get("superkingdom").unwrap();
+use super::{graph_layer::GraphOps, query::QueryBuilder};
 
+pub struct KingdomModel<Conn> where Conn: GraphOps {
+    conn: Conn,
+}
+
+impl <Conn: GraphOps> KingdomModel<Conn> {
+    pub fn new(conn: Conn) -> Self {
         Self {
-            id: Some(id),
-            kingdom: kingdom.clone(),
-            superkingdom: superkingdom.clone()
+            conn
         }
     }
-}
 
-impl Fetch<Graph> for Kingdom {
-    async fn fetch(conn: Graph, query_builder: &dyn QueryBuilder) -> result::Result<Vec<Self>, DataError> {
-        let (query_str, params) = query_builder.build();
+    pub async fn fetch(&self) -> result::Result<Vec<Kingdom>, DataError> {
+        let query = QueryBuilder::new()
+            .query("MATCH (n:Kingdom) RETURN n")
+            .build();
 
-        let query = query(&query_str).params(params);
-        let mut result = conn.execute(query).await.unwrap();
+        let result:Vec<Kingdom> = self.conn.clone().fetch_all(query).await?;
 
-        let mut kingdoms = Vec::new();
-
-        while let Ok(Some(row)) = result.next().await {
-            let node:Node = row.get("n").unwrap();
-            let kingdom = Kingdom::from(node);
-
-            kingdoms.push(kingdom);
-        }
-
-        Ok(kingdoms)
+        Ok(result)
     }
-}
 
-impl Exists<Graph> for Kingdom {}
+    pub async fn count(&self, kingdom: &str) -> result::Result<i32, DataError> {
+        let query = QueryBuilder::new()
+            .query("MATCH (n:Kingdom {kingdom: $kingdom}) RETURN COUNT(n) as count")
+            .param("kingdom", kingdom)
+            .build();
 
-impl Count<Graph> for Kingdom {
-    async fn count(&self, conn: Graph) -> result::Result<i32, DataError> {
-        let query = query("MATCH (n:Kingdom {kingdom: $kingdom}) RETURN COUNT(n) as count")
-            .param("kingdom", self.kingdom.clone());
+        let result: i32 = self.conn.clone()
+            .fetch_all(query).await?
+            .first()
+            .cloned()
+            .unwrap();
 
-        let result = conn
-            .execute(query)
-            .await
-            .unwrap()
-            .next()
-        .await;
-
-        match result {
-            Ok(Some(row)) => {
-                let count:i32 = row.get("count").unwrap();
-                Ok(count)
-            },
-            Err(err) => Err(DataError::QueryError(format!("${err}"))),
-            _ => Err(DataError::QueryError(format!("Unexpectely return no row."))),
-        }
+        Ok(result)
     }
-}
 
-impl Create<Graph> for Kingdom {
-    async fn create(&self, conn: Graph) -> result::Result<Kingdom, DataError> {
-        if self.exists(conn.clone()).await? {
-            return Err(DataError::AlreadyExist(format!("{} already exists", self.kingdom)));
+    pub async fn create(&self, record: Kingdom) -> result::Result<Kingdom, DataError> {
+        if self.count(&record.kingdom).await? > 0 {
+            return Err(DataError::AlreadyExist(format!("{} already exists", record.kingdom)));
         }
 
         let id = Uuid::new_v4();
 
-        let query = query("
-            CREATE (n:Kingdom {id: $id, kingdom: $kingdom, superkingdom: $superkingdom})
-            RETURN n
-        ")
-            .param("id", id.to_string())
-            .param("kingdom", self.kingdom.clone())   
-            .param("superkingdom", self.superkingdom.clone());
+        let query = QueryBuilder::new()
+            .query("
+                CREATE (n:Kingdom {id: $id, kingdom: $kingdom, superkingdom: $superkingdom})
+                RETURN n
+            ")
+            .param("id", &id.to_string())
+            .param("kingdom", &record.kingdom)
+            .param("superkingdom", &record.superkingdom)
+            .build();
 
-        let mut result = conn.execute(query).await.unwrap();
+        let kingdom = self.conn.clone().execute_fetch(query).await?;
 
-        if let Ok(Some(row)) = result.next().await {
-            let node:Node = row.get("n").unwrap();
+        Ok(kingdom)
 
-            return Ok(Kingdom::from(node));
-        }
-
-        Err(DataError::NotInsertedEntity(format!("Entity was not inserted!")))
     }
 }
 

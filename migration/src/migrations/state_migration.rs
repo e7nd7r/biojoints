@@ -2,21 +2,19 @@ use async_trait::async_trait;
 use neo4rs::Graph;
 
 use models::{
-    data::crud::Create,
-    data::data_error::DataError,
-    records::state::State,
+    data::data_error::DataError, neo4j_impl::{graph_layer::GraphLayer, state::StateModel}, records::state::State
 };
 use super::migrate::{Migrate, MigrationResult};
 
 pub struct StateMigration {
-    description: String,
+    table_name: String,
     neo4j_graph: Graph,
 }
 
 impl StateMigration {
     pub fn new(desc: &str, neo4j_graph: Graph) -> Self {
         Self {
-            description: String::from(desc),
+            table_name: String::from(desc),
             neo4j_graph
         }
     }
@@ -25,8 +23,12 @@ impl StateMigration {
 #[async_trait]
 impl Migrate for StateMigration {
     async fn migrate(self: &Self) -> Result<MigrationResult, DataError> {
-        let result = MigrationResult {};
-        let neo4j_graph = self.neo4j_graph.clone();
+        let mut result = MigrationResult::new(&self.table_name);
+        let mut affected = 0;
+        let mut ignored = 0;
+
+        let graph_layer = GraphLayer::new(self.neo4j_graph.clone());
+        let model = StateModel::new(graph_layer);
 
         let states = [
             State::from((String::from("mx"), String::from("Aguascalientes"), String::from("agu"))),
@@ -64,23 +66,28 @@ impl Migrate for StateMigration {
         ];
 
         for state in states {
-            let insert_res = state.create(neo4j_graph.clone()).await;
+            let insert_res = model.create(state.clone()).await;
 
             match insert_res {
                 Ok(_) => {
                     println!("State: {}, inserted correctly!", state.name);
-                    Ok(())
+                    affected += 1;
                 },
                 Err(DataError::AlreadyExist(_)) => {
                     println!("State {} already exists. Will be ignored.", state.name);
-                    Ok(())
+                    ignored += 1;
                 },
                 _ => {
                     println!("State: {}, failed to insert!", state.name);
-                    Err(DataError::QueryError("Failed to insert state".to_string()))
+                    return Err(DataError::QueryError("Failed to insert state".to_string()));
                 },
-            }?;
+            }
         }
+
+        println!("Affected: {}, Ignored: {}", affected, ignored);
+
+        result.set_affected(affected);
+        result.set_ignored(ignored);
 
         Ok(result)
     }

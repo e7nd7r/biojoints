@@ -1,81 +1,60 @@
-use neo4rs::{query, Graph, Node};
-
 use crate::{
-    data::{
-        crud::{Count, Create, Exists},
-        data_error::DataError
-    },
+    data::data_error::DataError,
     records::order::Order
 };
 
-impl From<Node> for Order {
-    fn from(node: Node) -> Self {
-        let class: String = node.get("class").unwrap();
-        let order: String = node.get("order").unwrap();
-        let subclass: String = node.get("subclass").unwrap();
-        let superorder: String = node.get("superorder").unwrap();
+use super::{graph_layer::GraphOps, query::QueryBuilder};
 
+pub struct OrderModel<Conn> where Conn: GraphOps {
+    conn: Conn,
+}
+
+impl <Conn: GraphOps> OrderModel<Conn> {
+    pub fn new(conn: Conn) -> Self {
         Self {
-            class: class.clone(),
-            order: order.clone(),
-            subclass: subclass.clone(),
-            superorder: superorder.clone()
+            conn,
         }
     }
-}
 
-impl Exists<Graph> for Order {}
+    pub async fn fetch(&self) -> Result<Vec<Order>, DataError> {
+        let query = QueryBuilder::new()
+            .query("MATCH (o:Order) RETURN o")
+            .build();
 
-impl Count<Graph> for Order {
-    async fn count(&self,  conn: Graph) -> Result<i32, crate::data::data_error::DataError> {
-        let query = query("MATCH (n:Order {order: $order}) RETURN COUNT(n) as count")
-            .param("order", self.order.clone());
+        let records = self.conn.clone().fetch_all(query).await?;
 
-        let result = conn
-            .execute(query)
-            .await
-            .unwrap()
-            .next()
-            .await;
-
-        match result {
-            Ok(Some(row)) => {
-                let count:i32 = row.get("count").unwrap();
-                Ok(count)
-            },
-            Err(err) => Err(DataError::QueryError(format!("${err}"))),
-            _ => Err(DataError::QueryError(format!("Unexpectely return no row."))),
-        }
+        Ok(records)
     }
-}
 
-impl Create<Graph> for Order {
-    async fn create(&self, conn: Graph) -> Result<Order, DataError> {
-        if self.exists(conn.clone()).await? {
-            return Err(DataError::AlreadyExist(format!("{} already exists", self.order)));
-        }
+    pub async fn count(&self, order: &str) -> Result<i32, DataError> {
+        let query = QueryBuilder::new()
+            .query("MATCH (o:Order {order: $order }) RETURN COUNT(o) as count")
+            .param("order", order)
+            .build();
 
-        let query = query("
-            MATCH (c:Class)
-            WHERE c.class = $class
-            CREATE (o:Order { class: $class, order: $order, subclass: $subclass, superorder: $superorder })
-            CREATE (o)-[:BELONGS_TO]->(c)
-            RETURN o
-        ")
-            .param("class", self.class.clone())
-            .param("order", self.order.clone())   
-            .param("subclass", self.subclass.clone())
-            .param("superorder", self.superorder.clone());
+        let count:i32 = self.conn.clone().execute_fetch(query).await?;
 
-        let mut result = conn.execute(query).await.unwrap();
+        Ok(count)
+    }
 
-        if let Ok(Some(row)) = result.next().await {
-            let node:Node = row.get("o").unwrap();
+    pub async fn create(&self, record: Order) -> Result<Order, DataError> {
+        let query = QueryBuilder::new()
+            .query("
+                MATCH (c:Class)
+                WHERE c.class = $class
+                CREATE (o:Order { class: $class, order: $order, subclass: $subclass, superorder: $superorder })
+                CREATE (o)-[:BELONGS_TO]->(c)
+                RETURN o
+            ")
+            .param("class", &record.class)
+            .param("order", &record.order)
+            .param("subclass", &record.subclass)
+            .param("superorder", &record.superorder)
+            .build();
 
-            return Ok(Order::from(node));
-        }
+        let record: Order = self.conn.clone().execute_fetch(query).await?;
 
-        Err(DataError::NotInsertedEntity(format!("Entity was not inserted!")))
+        Ok(record)
     }
 }
 

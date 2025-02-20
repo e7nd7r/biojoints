@@ -1,25 +1,23 @@
-use mysql::{prelude::Queryable, Params};
+use crate::{data::data_error::DataError, records::kingdom::Kingdom};
+use super::{query::QueryBuilder, relational_layer::RelationalOps};
 
-use crate::{data::{crud::Fetch, data_error::DataError, query_builder::QueryBuilder}, records::kingdom::Kingdom};
+pub struct KingdomModel<Conn> where Conn: RelationalOps {
+    conn: Conn,
+}
 
-/// Using Mutex for now since parallel queries is not
-/// that important for now. 
-impl Fetch<mysql::Pool> for Kingdom {
-    async fn fetch(conn_pool: mysql::Pool, query_builder: &dyn QueryBuilder) -> Result<Vec<Self>, DataError> {
-        let mut conn = conn_pool.get_conn().expect("Error connection to db");
+impl<Conn: RelationalOps> KingdomModel<Conn> {
+    pub fn new(conn: Conn) -> Self {
+        Self { conn }
+    }
 
-        let (sql, _) = query_builder.build();
+    pub async fn fetch(&self) -> Result<Vec<Kingdom>, DataError> {
+        let query = QueryBuilder::new()
+            .query("SELECT Kingdom, Subkingdom FROM _kingdom")
+            .build();
 
-        let stmt = conn.prep(sql).expect("Incorrect query");
+        let records = self.conn.clone().fetch_all(query).await?;
 
-        // Query the table and collect the results
-        let results = conn.exec(&stmt, Params::Empty)
-            .unwrap()
-            .iter()
-            .map(|val: &(String, String)| Kingdom::from(val))
-            .collect();
-
-        Ok(results)
+        Ok(records)
     }
 }
 

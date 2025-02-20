@@ -1,28 +1,29 @@
-use std::future::Future;
+use super::data_error::DataError;
 
-use super::{data_error::DataError, query_builder::QueryBuilder};
-
+#[async_trait::async_trait]
 pub trait Create<Conn> : Sized {
-    fn create(&self, conn: Conn) -> impl Future<Output = Result<Self, DataError>> + Send;
+     async fn create(&self, conn: Conn) -> Result<Self, DataError> where Conn: 'async_trait;
 }
 
+#[async_trait::async_trait]
 pub trait Fetch<Conn> : Sized {
-    fn fetch(conn: Conn, query_builder: &dyn QueryBuilder) -> impl Future<Output = Result<Vec<Self>, DataError>> + Send;
+    async fn fetch(conn: Conn) -> Result<Vec<Self>, DataError> where Conn: 'async_trait;
 }
 
+#[async_trait::async_trait]
 pub trait Count<Conn> : Sized {
-    fn count(&self, conn: Conn) -> impl Future<Output = Result<i32, DataError>> + Send;
+    async fn count(&self, conn: Conn) -> Result<i32, DataError> where Conn: 'async_trait;
 }
 
-pub trait Exists<Conn: Send> : Count<Conn> {
-    fn exists(&self, conn: Conn) -> impl Future<Output = Result<bool, DataError>> + Send
-    where Self : Sync {
-    async {
+#[async_trait::async_trait]
+pub trait Exists<Conn: Send> : Count<Conn > {
+    async fn exists(&self, conn: Conn) -> Result<bool, DataError> where Conn: 'async_trait
+    {
         match self.count(conn).await {
             Ok(count) => Ok(count > 0),
             Err(err) => Err(err)
         }
-    } }
+    }
 }
 
 pub trait List : Sized {

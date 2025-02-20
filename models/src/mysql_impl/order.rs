@@ -1,27 +1,29 @@
-use mysql::{prelude::Queryable, Value};
-
 use crate::{
-    data::{crud::Fetch, data_error::DataError, query_builder::QueryBuilder},
-    records::order::{Order, OrderRecord},
+    data::data_error::DataError,
+    records::order::Order,
 };
 
-impl Fetch<mysql::Pool> for Order {
-    async fn fetch(conn_pool: mysql::Pool, query_builder: &dyn QueryBuilder) -> Result<Vec<Self>, DataError> {
-        let mut conn = conn_pool.get_conn().expect("Error connection to db");
+use super::{query::QueryBuilder, relational_layer::RelationalOps};
 
-        let (sql, raw_params) = query_builder.build();
+pub struct OrderModel<Conn> where Conn: RelationalOps {
+    conn: Conn,
+}
 
-        let mysql_params: Vec<(String, Value)> = raw_params.into_iter()
-            .map(|(k, v)| (k.to_owned(), Value::from(v)))
-            .collect();
+impl <Conn: RelationalOps> OrderModel<Conn> {
+    pub fn new(conn: Conn) -> Self {
+        Self {
+            conn,
+        }
+    }
 
-        let results = conn.exec(sql, mysql_params)
-            .unwrap()
-            .iter()
-            .map(|val: &OrderRecord| Order::from(val.clone()))
-            .collect();
+    pub async fn fetch(&self) -> Result<Vec<Order>, DataError> {
+        let query = QueryBuilder::new()
+            .query("SELECT _Class, _Order, SubClass, Superorder FROM _order")
+            .build();
 
-        Ok(results)
+        let records = self.conn.clone().fetch_all(query).await?;
+
+        Ok(records)
     }
 }
 

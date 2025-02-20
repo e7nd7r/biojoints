@@ -281,7 +281,7 @@ version = "0.1.0"
 dependencies = [
  "actix-web",
  "models",
- "mysql",
+ "mysql 25.0.1",
  "neo4rs",
  "reqwest 0.11.27",
  "serde",
@@ -1749,8 +1749,10 @@ dependencies = [
 name = "models"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "chrono",
- "mysql",
+ "mysql 26.0.0",
+ "mysql_common 0.34.1",
  "neo4rs",
  "serde",
  "uuid",
@@ -1775,7 +1777,7 @@ dependencies = [
  "io-enum",
  "libc",
  "lru",
- "mysql_common",
+ "mysql_common 0.32.4",
  "named_pipe",
  "native-tls",
  "pem",
@@ -1783,7 +1785,29 @@ dependencies = [
  "serde",
  "serde_json",
  "socket2",
- "twox-hash",
+ "twox-hash 1.6.3",
+ "url",
+]
+
+[[package]]
+name = "mysql"
+version = "26.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "64453aedc258ac8c720b46c8264302fad39cef6c02483f68adbad4bcd22d6fab"
+dependencies = [
+ "bufstream",
+ "bytes",
+ "crossbeam-queue",
+ "flate2",
+ "io-enum",
+ "libc",
+ "lru",
+ "mysql_common 0.34.1",
+ "named_pipe",
+ "pem",
+ "percent-encoding",
+ "socket2",
+ "twox-hash 2.1.0",
  "url",
 ]
 
@@ -1792,6 +1816,24 @@ name = "mysql-common-derive"
 version = "0.31.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "63c3512cf11487168e0e9db7157801bf5273be13055a9cc95356dc9e0035e49c"
+dependencies = [
+ "darling",
+ "heck",
+ "num-bigint",
+ "proc-macro-crate",
+ "proc-macro-error2",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.98",
+ "termcolor",
+ "thiserror",
+]
+
+[[package]]
+name = "mysql-common-derive"
+version = "0.32.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "deb6d9ff4094f6d58d3f892fc558e60048476213dd17dcf904b62202e9029da6"
 dependencies = [
  "darling",
  "heck",
@@ -1825,7 +1867,7 @@ dependencies = [
  "flate2",
  "frunk",
  "lazy_static",
- "mysql-common-derive",
+ "mysql-common-derive 0.31.2",
  "num-bigint",
  "num-traits",
  "rand 0.8.5",
@@ -1840,6 +1882,39 @@ dependencies = [
  "subprocess",
  "thiserror",
  "time",
+ "uuid",
+ "zstd",
+]
+
+[[package]]
+name = "mysql_common"
+version = "0.34.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "34a9141e735d5bb02414a7ac03add09522466d4db65bdd827069f76ae0850e58"
+dependencies = [
+ "base64 0.22.1",
+ "bitflags 2.8.0",
+ "btoi",
+ "byteorder",
+ "bytes",
+ "cc",
+ "chrono",
+ "cmake",
+ "crc32fast",
+ "flate2",
+ "lazy_static",
+ "mysql-common-derive 0.32.0",
+ "num-bigint",
+ "num-traits",
+ "rand 0.8.5",
+ "regex",
+ "saturating",
+ "serde",
+ "serde_json",
+ "sha1",
+ "sha2",
+ "subprocess",
+ "thiserror",
  "uuid",
  "zstd",
 ]
@@ -3336,6 +3411,12 @@ dependencies = [
  "rand 0.8.5",
  "static_assertions",
 ]
+
+[[package]]
+name = "twox-hash"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e7b17f197b3050ba473acf9181f7b1d3b66d1cf7356c6cc57886662276e65908"
 
 [[package]]
 name = "typenum"

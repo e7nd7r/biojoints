@@ -1,21 +1,12 @@
-use std::convert::From;
+use mysql::prelude::FromRow;
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
+#[derive(Clone, Serialize, Deserialize, FromRow)]
 pub struct Class {
+    pub id: Option<Uuid>,
     pub phylum: String,
     pub class: String,
     pub subphylum: String,
 }
 
-pub type ClassRecord = (String, String, String);
-
-impl From<ClassRecord> for Class {
-    fn from(value: ClassRecord) -> Self {
-        let (phylum, class, subphylum) = value;
-
-        Self {
-            phylum,
-            class,
-            subphylum
-        }
-    }
-}

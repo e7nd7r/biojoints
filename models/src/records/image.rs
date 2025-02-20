@@ -1,6 +1,9 @@
-use std::convert::From;
+use mysql::prelude::FromRow;
+use serde::{Deserialize, Serialize};
 
+#[derive(Clone, Serialize, Deserialize, FromRow)]
 pub struct Image {
+    pub id: Option<i32>,
     pub file_name: String,
     pub notes: String,
     pub specie_code: String,
@@ -8,30 +11,3 @@ pub struct Image {
     pub valid_specie_code: String,
 }
 
-pub type ImageRecord = (
-    String,
-    String,
-    String,
-    i32,
-    String,
-);
-
-impl From<ImageRecord> for Image {
-    fn from(value: ImageRecord) -> Self {
-        let (
-            file_name,
-            notes,
-            specie_code,
-            author_id,
-            valid_specie_code,
-        ) = value;
-
-        Self {
-            file_name,
-            notes,
-            specie_code,
-            author_id,
-            valid_specie_code,
-        }
-    }
-}

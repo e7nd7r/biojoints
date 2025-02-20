@@ -1,8 +1,13 @@
 use std::{collections::HashMap, convert::From};
 
+use mysql::prelude::FromRow;
+use serde::{Deserialize, Serialize};
+
 use crate::data::data_error::DataError;
 
+#[derive(Clone, Serialize, Deserialize, FromRow)]
 pub struct State {
+    pub id: Option<uuid::Uuid>,
     pub country_code: String,
     pub name: String,
     pub code: String,
@@ -51,7 +56,7 @@ impl State {
         map
         .get(code)
         .map(|x| x.to_string())
-        .ok_or(DataError::UnexpectedCode(format!("Invalid code. | {}", code)))
+        .ok_or(DataError::UnknownError(format!("Invalid code. | {}", code)))
     }
 }
 
@@ -62,9 +67,11 @@ impl From<StateRecord> for State {
         let (country_code, name, code) = value;
 
         Self {
+            id: None,
             country_code,
             name,
             code,
         }
     }
 }
+

@@ -1,25 +1,30 @@
-use mysql::{prelude::Queryable, Value};
-
 use crate::{
-    data::{crud::Fetch, data_error::DataError, query_builder::QueryBuilder},
-    records::image::{Image, ImageRecord},
+    data::data_error::DataError,
+    records::image::Image,
 };
 
-impl Fetch<mysql::Pool> for Image {
-    async fn fetch(conn_pool: mysql::Pool, query_builder: &dyn QueryBuilder) -> Result<Vec<Self>, DataError> {
-        let mut conn = conn_pool.get_conn().expect("Error connection to db");
+use super::{query::QueryBuilder, relational_layer::RelationalOps};
 
-        // Query the table and collect the results
-        let (sql, raw_params) = query_builder.build();
-        let mysql_params: Vec<(String, Value)> = raw_params.into_iter().map(|(k, v)| (k, Value::from(v))).collect();
+pub struct ImageModel<Conn> where Conn: RelationalOps {
+    conn: Conn,
+}
 
-        let results = conn.exec(sql, mysql_params)
-            .unwrap()
-            .iter()
-            .map(|row: &ImageRecord| Image::from(row.clone()))
-            .collect();
+impl <Conn: RelationalOps> ImageModel<Conn> {
+    pub fn new(conn: Conn) -> Self {
+        Self {
+            conn,
+        }
+    }
 
-        Ok(results)
+    pub async fn fetch(&self) -> Result<Vec<Image>, DataError> {
+        let query = QueryBuilder::new()
+            .query("SELECT ImageID, ImageName, ImagePath, ImageDescription FROM _image")
+            .build();
+
+        let records = self.conn.clone().fetch_all(query).await?;
+
+        Ok(records)
     }
 }
+
 

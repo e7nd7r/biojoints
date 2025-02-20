@@ -1,81 +1,60 @@
-use neo4rs::{query, Graph, Node};
-
 use crate::{
-    data::{
-        crud::{Count, Create, Exists},
-        data_error::DataError
-    },
+    data::data_error::DataError,
     records::genus::Genus
 };
 
-impl From<Node> for Genus {
-    fn from(node: Node) -> Self {
-        let family: String = node.get("family").unwrap();
-        let genus: String = node.get("genus").unwrap();
-        let subfamily: String = node.get("subfamily").unwrap();
-        let tribe: String = node.get("tribe").unwrap();
+use super::{graph_layer::GraphOps, query::QueryBuilder};
 
+pub struct GenusModel<Conn> where Conn: GraphOps {
+    conn: Conn,
+}
+
+impl <Conn: GraphOps> GenusModel<Conn> {
+    pub fn new(conn: Conn) -> Self {
         Self {
-            family: family.clone(),
-            genus: genus.clone(),
-            subfamily: subfamily.clone(),
-            tribe: tribe.clone()
+            conn,
         }
     }
-}
 
-impl Exists<Graph> for Genus {}
+    pub async fn fetch(&self) -> Result<Vec<Genus>, DataError> {
+        let query = QueryBuilder::new()
+            .query("MATCH (g:Genus) RETURN g")
+            .build();
 
-impl Count<Graph> for Genus {
-    async fn count(&self,  conn: Graph) -> Result<i32, crate::data::data_error::DataError> {
-        let query = query("MATCH (n:Genus {genus: $genus}) RETURN COUNT(n) as count")
-            .param("genus", self.genus.clone());
+        let records = self.conn.clone().fetch_all(query).await?;
 
-        let result = conn
-            .execute(query)
-            .await
-            .unwrap()
-            .next()
-            .await;
-
-        match result {
-            Ok(Some(row)) => {
-                let count:i32 = row.get("count").unwrap();
-                Ok(count)
-            },
-            Err(err) => Err(DataError::QueryError(format!("${err}"))),
-            _ => Err(DataError::QueryError(format!("Unexpectely return no row."))),
-        }
+        Ok(records)
     }
-}
 
-impl Create<Graph> for Genus {
-    async fn create(&self, conn: Graph) -> Result<Genus, DataError> {
-        if self.exists(conn.clone()).await? {
-            return Err(DataError::AlreadyExist(format!("{} already exists", self.genus)));
-        }
+    pub async fn count(&self, genus: &str) -> Result<i32, DataError> {
+        let query = QueryBuilder::new()
+            .query("MATCH (g:Genus {genus: $genus}) RETURN COUNT(g) as count")
+            .param("genus", genus)
+            .build();
 
-        let query = query("
-            MATCH (f:Family)
-            WHERE f.family = $family
-            CREATE (g:Genus { family: $family, genus: $genus, subfamily: $subfamily, tribe: $tribe })
-            CREATE (g)-[:BELONGS_TO]->(f)
-            RETURN f
-        ")
-            .param("family", self.family.clone())
-            .param("genus", self.genus.clone())   
-            .param("subfamily", self.subfamily.clone())
-            .param("tribe", self.tribe.clone());
+        let count:i32 = self.conn.clone().execute_fetch(query).await?;
 
-        let mut result = conn.execute(query).await.unwrap();
+        Ok(count)
+    }
 
-        if let Ok(Some(row)) = result.next().await {
-            let node:Node = row.get("g").unwrap();
+    pub async fn create(&self, record: Genus) -> Result<Genus, DataError> {
+        let query = QueryBuilder::new()
+            .query("
+                MATCH (f:Family)
+                WHERE f.family = $family
+                CREATE (g:Genus { family: $family, genus: $genus, subfamily: $subfamily, tribe: $tribe })
+                CREATE (g)-[:BELONGS_TO]->(f)
+                RETURN f
+            ")
+            .param("family", &record.family)
+            .param("genus", &record.genus)
+            .param("subfamily", &record.subfamily)
+            .param("tribe", &record.tribe)
+            .build();
 
-            return Ok(Genus::from(node));
-        }
+        let record: Genus = self.conn.clone().execute_fetch(query).await?;
 
-        Err(DataError::NotInsertedEntity(format!("Entity was not inserted!")))
+        Ok(record)
     }
 }
 

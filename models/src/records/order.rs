@@ -1,23 +1,13 @@
-use std::convert::From;
+use mysql::prelude::FromRow;
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
+#[derive(Clone, Serialize, Deserialize, FromRow)]
 pub struct Order {
+    pub id: Option<Uuid>,
     pub class: String,
     pub order: String,
     pub subclass: String,
     pub superorder: String,
 }
 
-pub type OrderRecord = (String, String, String, String);
-
-impl From<OrderRecord> for Order {
-    fn from(value: OrderRecord) -> Self {
-        let (class, order, subclass, superorder) = value;
-
-        Self {
-            class,
-            order,
-            subclass,
-            superorder,
-        }
-    }
-}

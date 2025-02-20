@@ -20,7 +20,11 @@ pub struct MigrationService {
 }
 
 impl MigrationService {
-    pub async fn run() {
+    pub fn new() -> Self {
+        Self {}
+    }
+
+    async fn inner_run(&self) {
         let url = "<URL here>";
         let pool = Pool::new(url).expect("Error creating the pool");
 
@@ -77,12 +81,47 @@ impl MigrationService {
             Box::new(specie_migration),
         ];
 
+        println!("\n=== Starting Migration Process ===\n");
+
+        let mut total_affected = 0;
+        let mut total_ignored = 0;
+        let mut successful_migrations = 0;
+        let total_migrations = migrations.len();
+
         for migration in migrations {
             match migration.migrate().await {
-                Ok(res) => println!("{:?}", res),
-                Err(err) => panic!("{:?}", err)
+                Ok(res) => {
+                    println!("✓ {}", res.table_name);
+                    println!("  Rows affected: {}", res.affected());
+                    println!("  Rows ignored: {}\n", res.ignored());
+
+                    total_affected += res.affected();
+                    total_ignored += res.ignored();
+                    successful_migrations += 1;
+                },
+                Err(err) => {
+                    println!("✗ Migration failed: {:?}\n", err);
+                    panic!("Migration process aborted due to error: {:?}", err);
+                }
             }
         }
+
+        println!("=== Migration Summary ===");
+        println!("Successful migrations: {}/{}", successful_migrations, total_migrations);
+        println!("Total rows affected: {}", total_affected);
+        println!("Total rows ignored: {}", total_ignored);
+        println!("========================\n");
+    }
+
+    pub fn run(&self) {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(self.inner_run());
+    }
+}
+
+impl Default for MigrationService {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

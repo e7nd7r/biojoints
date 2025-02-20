@@ -1,20 +1,20 @@
-use std::convert::From;
+use mysql::prelude::FromRow;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug)]
+#[derive(Clone, Serialize, Deserialize, FromRow)]
 pub struct Country {
+    pub id: Option<uuid::Uuid>,
     pub name: String,
     pub code: String,
 }
 
-pub type CountryRecord = (String, String);
-
-impl From<CountryRecord> for Country {
-    fn from(value: CountryRecord) -> Self {
-        let (name, code) = value;
-
+impl From<(String, String)> for Country {
+    fn from((name, code): (String, String)) -> Self {
         Self {
+            id: None,
             name,
             code,
         }
     }
 }
+

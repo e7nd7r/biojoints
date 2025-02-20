@@ -1,77 +1,64 @@
-use neo4rs::{query, Graph, Node};
-
 use crate::{
-    data::{
-        crud::{Count, Create, Exists},
-        data_error::DataError
-    },
+    data::data_error::DataError,
     records::phylum::Phylum
 };
 
-impl From<Node> for Phylum {
-    fn from(node: Node) -> Self {
-        let kingdom: String = node.get("kingdom").unwrap();
-        let phylum: String = node.get("phylum").unwrap();
-        let subkingdom: String = node.get("subkingdom").unwrap();
+use super::{graph_layer::GraphOps, query::QueryBuilder};
 
+pub struct PhylumModel<Conn> where Conn: GraphOps {
+    conn: Conn,
+}
+
+impl <Conn: GraphOps> PhylumModel<Conn> {
+    pub fn new(conn: Conn) -> Self {
         Self {
-            kingdom: kingdom.clone(),
-            phylum: phylum.clone(),
-            subkingdom: subkingdom.clone()
+            conn,
         }
     }
-}
 
-impl Exists<Graph> for Phylum {}
+    pub async fn fetch(&self) -> Result<Vec<Phylum>, DataError> {
+        let query = QueryBuilder::new()
+            .query("MATCH (p:Phylum) RETURN p")
+            .build();
 
-impl Count<Graph> for Phylum {
-    async fn count(&self,  conn: Graph) -> Result<i32, crate::data::data_error::DataError> {
-        let query = query("MATCH (n:Phylum {phylum: $phylum}) RETURN COUNT(n) as count")
-            .param("phylum", self.phylum.clone());
-        
-        let result = conn
-            .execute(query)
-            .await
-            .unwrap()
-            .next()
-            .await;
-        
-        match result {
-            Ok(Some(row)) => {
-                let count:i32 = row.get("count").unwrap();
-                Ok(count)
-            },
-            Err(err) => Err(DataError::QueryError(format!("${err}"))),
-            _ => Err(DataError::QueryError(format!("Unexpectely return no row."))),
-        }
+        let records = self.conn.clone().fetch_all(query).await?;
+
+        Ok(records)
     }
-}
 
-impl Create<Graph> for Phylum {
-    async fn create(&self, conn: Graph) -> Result<Phylum, DataError> {
-        if self.exists(conn.clone()).await? {
-            return Err(DataError::AlreadyExist(format!("{} already exists", self.phylum)));
-        }
+    pub async fn count(&self, phylum: &str) -> Result<i32, DataError> {
+        let query = QueryBuilder::new()
+            .query("MATCH (p:Phylum {phylym: $phylum}) RETURN COUNT(p) as count")
+            .param("phylum", phylum)
+            .build();
 
-        let query = query("
-            MATCH (k:Kingdom)
-            WHERE k.kingdom = $kingdom
-            CREATE (p:Phylum { kingdom: $kingdom, phylum: $phylum, subkingdom: $subkingdom })
-            CREATE (p)-[:BELONGS_TO]->(k)
-            RETURN p
-        ")
-            .param("kingdom", self.kingdom.clone())
-            .param("phylum", self.phylum.clone())   
-            .param("subkingdom", self.subkingdom.clone());
+        let count:i32 = self.conn.clone().execute_fetch(query).await?;
 
-        let mut result = conn.execute(query).await.unwrap();
-
-        if let Ok(Some(row)) = result.next().await {
-            let phylum: Node = row.get("p").unwrap(); 
-
-            return Ok(Phylum::from(phylum));
-        }
-
-        Err(DataError::NotInsertedEntity(format!("Entity was not inserted!")))
+        Ok(count)
     }
+
+    pub async fn create(&self, record: Phylum) -> Result<Phylum, DataError> {
+        if self.count(&record.phylum).await? > 0 {
+            return Err(DataError::AlreadyExist(format!("{} already exists", record.phylum)));
+        }
+
+        let query = QueryBuilder::new()
+            .query("
+                MATCH (k:Kingdom)
+                WHERE k.kingdom = $kingdom
+                CREATE (p:Phylum { kingdom: $kingdom, phylum: $phylum, subkingdom: $subkingdom })
+                CREATE (p)-[:BELONGS_TO]->(k)
+                RETURN p
+            ")
+            .param("kingdom", &record.kingdom)
+            .param("phylum", &record.phylum)
+            .param("subkingdom", &record.subkingdom)
+            .build();
+
+        let record: Phylum = self.conn.clone().execute_fetch(query).await?;
+
+        Ok(record)
+    }
+
 }
+
