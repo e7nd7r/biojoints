@@ -2109,7 +2109,9 @@ dependencies = [
  "models",
  "mysql 26.0.0",
  "neo4rs",
+ "serde",
  "tokio",
+ "toml",
 ]
 
 [[package]]

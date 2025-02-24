@@ -828,7 +828,9 @@ dependencies = [
  "models",
  "mysql",
  "neo4rs",
+ "serde",
  "tokio",
+ "toml",
 ]
 
 [[package]]
@@ -1689,6 +1691,15 @@ checksum = "5f6d0975eaace0cf0fcadee4e4aaa5da15b5c079146f2cffb67c113be122bf37"
 dependencies = [
  "rustls",
  "tokio",
+]
+
+[[package]]
+name = "toml"
+version = "0.5.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f4f7f0dd8d50a853a531c426359045b1998f04219d88799810762cd4ad314234"
+dependencies = [
+ "serde",
 ]
 
 [[package]]

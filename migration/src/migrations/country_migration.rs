@@ -1,22 +1,23 @@
 use async_trait::async_trait;
-use neo4rs::Graph;
 
 use models::{
     data::data_error::DataError, neo4j_impl::{self, graph_layer::GraphLayer}, records::country::Country
 };
 
+use crate::service::service_bundle::ServiceBundle;
+
 use super::migrate::{Migrate, MigrationResult};
 
 pub struct CountryMigration {
     table_name: String,
-    neo4j_graph: Graph,
+    service_bundle: ServiceBundle,
 }
 
 impl CountryMigration {
-    pub fn new(desc: &str, neo4j_graph: Graph) -> Self {
+    pub fn new(desc: &str, service_bundle: ServiceBundle) -> Self {
         Self {
             table_name: String::from(desc),
-            neo4j_graph
+            service_bundle,
         }
     }
 }
@@ -29,9 +30,9 @@ impl Migrate for CountryMigration {
         let countries = [
             Country::from((String::from("Mexico"), String::from("mx")))
         ];
-
-        let graph = GraphLayer::new(self.neo4j_graph.clone());
-        let neo4j_model = neo4j_impl::country::CountryModel::new(graph);
+        let graph = self.service_bundle.graph.clone();
+        let graph_layer = GraphLayer::new(graph);
+        let neo4j_model = neo4j_impl::country::CountryModel::new(graph_layer);
 
         let mut affected = 0;
         let mut ignored = 0;

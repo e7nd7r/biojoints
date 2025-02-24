@@ -1,4 +1,5 @@
 mod migrations;
+mod service;
 
 use migrations::{
     class_migration::ClassMigration,
@@ -13,8 +14,8 @@ use migrations::{
     state_migration::StateMigration,
 };
 
-use mysql::*;
 use neo4rs::*;
+use service::service_bundle::ServiceBuilder;
 
 pub struct MigrationService {
 }
@@ -25,44 +26,52 @@ impl MigrationService {
     }
 
     async fn inner_run(&self) {
-        let url = "<URL here>";
-        let pool = Pool::new(url).expect("Error creating the pool");
-
         let graph = Graph::new(
             "<neo4j url here>",
             "<user>", 
             "<password>").await.unwrap();
 
+        let service_bundle = ServiceBuilder::new()
+            .with_config()
+            .use_graph()
+            .await
+            .expect("Failed to build service bundle")
+            .use_mysql()
+            .await
+            .expect("Failed to build service bundle")
+            .build()
+            .expect("Failed to build service bundle");
+
         let kingdom_migration = KingdomMigration::new(
-            "Kingdom Migration", pool.clone(), graph.clone()
+            "Kingdom Migration", service_bundle.clone()
         );
 
         let phylum_migration = PhylumMigration::new(
-            "Phylum Migration", pool.clone(), graph.clone()
+            "Phylum Migration", service_bundle.clone()
         );
 
         let class_migration = ClassMigration::new(
-            "Class Migration", pool.clone(), graph.clone()
+            "Class Migration", service_bundle.clone()
         );
 
         let order_migration = OrderMigration::new(
-            "Order Migration", pool.clone(), graph.clone()
+            "Order Migration", service_bundle.clone()
         );
 
         let family_migration = FamilyMigration::new(
-            "Family Migration", pool.clone(), graph.clone()
+            "Family Migration", service_bundle.clone()
         );
 
         let genus_migration = GenusMigration::new(
-            "Genus Migration", pool.clone(), graph.clone()
+            "Genus Migration", service_bundle.clone()
         );
 
         let specie_migration = SpecieMigration::new(
-            "Specie Migration", pool.clone(), graph.clone()
+            "Specie Migration", service_bundle.clone()
         );
 
         let country_migration = CountryMigration::new(
-            "Country Migration", graph.clone()
+            "Country Migration", service_bundle.clone()
         );
 
         let state_migration = StateMigration::new(

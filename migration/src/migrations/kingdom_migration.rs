@@ -1,5 +1,4 @@
 use async_trait::async_trait;
-use neo4rs::Graph;
 
 use models::{
     data::data_error::DataError,
@@ -7,20 +6,20 @@ use models::{
     neo4j_impl::{self, graph_layer::GraphLayer}
 };
 
+use crate::service::service_bundle::ServiceBundle;
+
 use super::migrate::{Migrate, MigrationResult};
 
 pub struct KingdomMigration {
     table_name: String,
-    mysql_conn_pool: mysql::Pool,
-    neo4j_graph: Graph,
+    service_bundle: ServiceBundle,
 }
 
 impl KingdomMigration {
-    pub fn new(table_name: &str, mysql_conn_pool: mysql::Pool, neo4j_graph: Graph) -> Self {
+    pub fn new(table_name: &str, service_bundle: ServiceBundle) -> Self {
         Self {
             table_name: String::from(table_name),
-            mysql_conn_pool,
-            neo4j_graph,
+            service_bundle,
         }
     }
 }
@@ -28,9 +27,11 @@ impl KingdomMigration {
 #[async_trait]
 impl Migrate for KingdomMigration {
     async fn migrate(&self) -> Result<MigrationResult, DataError> {
+        let mysql_pool = self.service_bundle.mysql_pool.clone();
+        let neo4j_graph = self.service_bundle.graph.clone();
         let mut result = MigrationResult::new(&self.table_name);
-        let relational = RelationalLayer::new(self.mysql_conn_pool.clone());
-        let graph = GraphLayer::new(self.neo4j_graph.clone());
+        let relational = RelationalLayer::new(mysql_pool);
+        let graph = GraphLayer::new(neo4j_graph);
 
         let neo4j_model = neo4j_impl::kingdom::KingdomModel::new(graph);
         let mysql_model = mysql_impl::kingdom::KingdomModel::new(relational);

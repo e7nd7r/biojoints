@@ -1,5 +1,4 @@
 use async_trait::async_trait;
-use neo4rs::Graph;
 
 use models::{
     data::data_error::DataError,
@@ -7,20 +6,20 @@ use models::{
     neo4j_impl::{self, graph_layer::GraphLayer}
 };
 
+use crate::service::service_bundle::ServiceBundle;
+
 use super::migrate::{Migrate, MigrationResult};
 
 pub struct SpecieMigration {
     table_name: String,
-    mysql_conn_pool: mysql::Pool,
-    neo4j_graph: Graph,
+    service_bundle: ServiceBundle,
 }
 
 impl SpecieMigration {
-    pub fn new(table_name: &str, mysql_conn_pool: mysql::Pool, neo4j_graph: Graph) -> Self {
+    pub fn new(table_name: &str, service_bundle: ServiceBundle) -> Self {
         Self {
             table_name: String::from(table_name),
-            mysql_conn_pool,
-            neo4j_graph,
+            service_bundle,
         }
     }
 }
@@ -29,8 +28,11 @@ impl SpecieMigration {
 impl Migrate for SpecieMigration {
     async fn migrate(&self) -> Result<MigrationResult, DataError> {
         let mut result = MigrationResult::new(&self.table_name);
-        let relational = RelationalLayer::new(self.mysql_conn_pool.clone());
-        let graph = GraphLayer::new(self.neo4j_graph.clone());
+        let graph = self.service_bundle.graph.clone();
+        let mysql_pool = self.service_bundle.mysql_pool.clone();
+
+        let graph = GraphLayer::new(graph);
+        let relational = RelationalLayer::new(mysql_pool);
 
         let neo4j_model = neo4j_impl::specie::SpecieModel::new(graph);
         let mysql_model = mysql_impl::specie::SpecieModel::new(relational);
