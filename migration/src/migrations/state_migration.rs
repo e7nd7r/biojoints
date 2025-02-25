@@ -1,21 +1,21 @@
 use async_trait::async_trait;
-use neo4rs::Graph;
 
-use models::{
-    data::data_error::DataError, neo4j_impl::{graph_layer::GraphLayer, state::StateModel}, records::state::State
-};
+use models::{data::data_error::DataError, records::state::State};
+
+use crate::service::service_bundle::ServiceBundle;
+
 use super::migrate::{Migrate, MigrationResult};
 
 pub struct StateMigration {
     table_name: String,
-    neo4j_graph: Graph,
+    service_bundle: ServiceBundle,
 }
 
 impl StateMigration {
-    pub fn new(desc: &str, neo4j_graph: Graph) -> Self {
+    pub fn new(desc: &str, service_bundle: ServiceBundle) -> Self {
         Self {
             table_name: String::from(desc),
-            neo4j_graph
+            service_bundle,
         }
     }
 }
@@ -27,8 +27,7 @@ impl Migrate for StateMigration {
         let mut affected = 0;
         let mut ignored = 0;
 
-        let graph_layer = GraphLayer::new(self.neo4j_graph.clone());
-        let model = StateModel::new(graph_layer);
+        let model = self.service_bundle.neo4j_model_provider.state.clone();
 
         let states = [
             State::from((String::from("mx"), String::from("Aguascalientes"), String::from("agu"))),

@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use models::{
-    data::data_error::DataError, neo4j_impl::{self, graph_layer::GraphLayer}, records::country::Country
+    data::data_error::DataError, records::country::Country
 };
 
 use crate::service::service_bundle::ServiceBundle;
@@ -30,9 +30,8 @@ impl Migrate for CountryMigration {
         let countries = [
             Country::from((String::from("Mexico"), String::from("mx")))
         ];
-        let graph = self.service_bundle.graph.clone();
-        let graph_layer = GraphLayer::new(graph);
-        let neo4j_model = neo4j_impl::country::CountryModel::new(graph_layer);
+
+        let neo4j_model = self.service_bundle.neo4j_model_provider.country.clone();
 
         let mut affected = 0;
         let mut ignored = 0;

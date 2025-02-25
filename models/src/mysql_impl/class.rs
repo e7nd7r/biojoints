@@ -1,6 +1,7 @@
 use crate::{data::data_error::DataError, records::class::Class};
 use super::{query::QueryBuilder, relational_layer::RelationalOps};
 
+#[derive(Clone)]
 pub struct ClassModel<Conn> where Conn: RelationalOps {
     conn: Conn,
 }

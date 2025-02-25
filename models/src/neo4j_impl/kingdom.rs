@@ -8,6 +8,7 @@ use crate::{
 
 use super::{graph_layer::GraphOps, query::QueryBuilder};
 
+#[derive(Clone)]
 pub struct KingdomModel<Conn> where Conn: GraphOps {
     conn: Conn,
 }

@@ -1,6 +1,11 @@
+use models::{
+    mysql_impl::{self, relational_layer::RelationalLayer},
+    neo4j_impl::{self, graph_layer::GraphLayer}
+};
+
 use mysql::*;
 
-use std::{error::Error, fmt::{self, Display, Formatter}, sync::Arc};
+use std::{error::Error, fmt::{self, Display, Formatter}};
 use neo4rs::Graph;
 
 use super::config::MigrationConfig;
@@ -33,9 +38,8 @@ pub struct ServiceBuilder {
 
 #[derive(Clone)]
 pub struct ServiceBundle {
-    pub config: Arc<MigrationConfig>,
-    pub graph: Graph,
-    pub mysql_pool: mysql::Pool,
+    pub mysql_model_provider: mysql_impl::model_provider::ModelProvider,
+    pub neo4j_model_provider: neo4j_impl::model_provider::ModelProvider,
 }
 
 impl ServiceBuilder {
@@ -93,19 +97,20 @@ impl ServiceBuilder {
     }
 
     pub fn build(self) -> Result<ServiceBundle, ServiceBuilderError> {
-        let config = self.config
-            .ok_or(ServiceBuilderError::ConfigNotSet)?;
-
         let graph = self.graph
             .ok_or(ServiceBuilderError::GraphNotSet)?;
 
         let mysql_pool = self.mysql_pool
             .ok_or(ServiceBuilderError::GraphNotSet)?;
 
+        let relational_layer = RelationalLayer::new(mysql_pool.clone());
+        let graph_layer = GraphLayer::new(graph.clone());
+        let mysql_model_provider = mysql_impl::model_provider::ModelProvider::new(relational_layer);
+        let neo4j_model_provider = neo4j_impl::model_provider::ModelProvider::new(graph_layer);
+
         Ok(ServiceBundle {
-            config: Arc::new(config),
-            graph,
-            mysql_pool,
+            mysql_model_provider,
+            neo4j_model_provider,
         })
     }
 }

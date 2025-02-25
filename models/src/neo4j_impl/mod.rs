@@ -9,4 +9,5 @@ pub mod specie;
 pub mod country;
 pub mod state;
 pub mod query;
+pub mod model_provider;
 

@@ -14,7 +14,6 @@ use migrations::{
     state_migration::StateMigration,
 };
 
-use neo4rs::*;
 use service::service_bundle::ServiceBuilder;
 
 pub struct MigrationService {
@@ -26,11 +25,6 @@ impl MigrationService {
     }
 
     async fn inner_run(&self) {
-        let graph = Graph::new(
-            "<neo4j url here>",
-            "<user>", 
-            "<password>").await.unwrap();
-
         let service_bundle = ServiceBuilder::new()
             .with_config()
             .use_graph()
@@ -75,7 +69,7 @@ impl MigrationService {
         );
 
         let state_migration = StateMigration::new(
-            "State Migration", graph.clone(),
+            "State Migration", service_bundle.clone(),
         );
 
         let migrations: Vec<Box<dyn Migrate>> = vec![

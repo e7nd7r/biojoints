@@ -1,13 +1,7 @@
 use async_trait::async_trait;
 
-use models::{
-    data::data_error::DataError,
-    mysql_impl::{self, relational_layer::RelationalLayer},
-    neo4j_impl::{self, graph_layer::GraphLayer}
-};
-
+use models::data::data_error::DataError;
 use crate::service::service_bundle::ServiceBundle;
-
 use super::migrate::MigrationResult;
 
 pub struct GenusMigration {
@@ -30,14 +24,9 @@ impl GenusMigration {
 impl Migrate for GenusMigration {
     async fn migrate(&self) -> Result<MigrationResult, DataError> {
         let mut result = MigrationResult::new(&self.table_name);
-        let graph = self.service_bundle.graph.clone();
-        let mysql_pool = self.service_bundle.mysql_pool.clone();
 
-        let relational = RelationalLayer::new(mysql_pool);
-        let graph = GraphLayer::new(graph);
-
-        let neo4j_model = neo4j_impl::genus::GenusModel::new(graph);
-        let mysql_model = mysql_impl::genus::GenusModel::new(relational);
+        let neo4j_model = self.service_bundle.neo4j_model_provider.genus.clone();
+        let mysql_model = self.service_bundle.mysql_model_provider.genus.clone();
 
         let genuses = mysql_model.fetch().await?;
         let mut affected = 0;
@@ -60,6 +49,7 @@ impl Migrate for GenusMigration {
         }
 
         println!("Affected: {}, Ignored: {}", affected, ignored);
+
         result.set_affected(affected);
         result.set_ignored(ignored);
 

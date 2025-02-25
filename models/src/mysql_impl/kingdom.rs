@@ -1,6 +1,7 @@
 use crate::{data::data_error::DataError, records::kingdom::Kingdom};
 use super::{query::QueryBuilder, relational_layer::RelationalOps};
 
+#[derive(Clone)]
 pub struct KingdomModel<Conn> where Conn: RelationalOps {
     conn: Conn,
 }

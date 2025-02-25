@@ -7,6 +7,7 @@ use crate::{
 
 use super::{graph_layer::GraphOps, query::QueryBuilder};
 
+#[derive(Clone)]
 pub struct StateModel<Conn> where Conn: GraphOps {
     conn: Conn,
 }

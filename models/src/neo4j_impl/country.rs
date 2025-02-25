@@ -5,6 +5,7 @@ use crate::{
 
 use super::{graph_layer::GraphOps, query::QueryBuilder};
 
+#[derive(Clone)]
 pub struct CountryModel<Conn> {
     conn: Conn,
 }

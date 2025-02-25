@@ -8,4 +8,5 @@ pub mod family;
 pub mod genus;
 pub mod specie;
 pub mod image;
+pub mod model_provider;
 

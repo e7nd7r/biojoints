@@ -5,6 +5,7 @@ use crate::{
 
 use super::{query::QueryBuilder, relational_layer::RelationalOps};
 
+#[derive(Clone)]
 pub struct OrderModel<Conn> where Conn: RelationalOps {
     conn: Conn,
 }

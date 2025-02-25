@@ -2,6 +2,7 @@ use crate::records::phylum::Phylum;
 
 use super::{query::QueryBuilder, relational_layer::RelationalOps};
 
+#[derive(Clone)]
 pub struct PhylumModel<Conn> where Conn: RelationalOps {
     conn: Conn,
 }

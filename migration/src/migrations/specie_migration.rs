@@ -1,10 +1,6 @@
 use async_trait::async_trait;
 
-use models::{
-    data::data_error::DataError,
-    mysql_impl::{self, relational_layer::RelationalLayer},
-    neo4j_impl::{self, graph_layer::GraphLayer}
-};
+use models::data::data_error::DataError;
 
 use crate::service::service_bundle::ServiceBundle;
 
@@ -28,14 +24,9 @@ impl SpecieMigration {
 impl Migrate for SpecieMigration {
     async fn migrate(&self) -> Result<MigrationResult, DataError> {
         let mut result = MigrationResult::new(&self.table_name);
-        let graph = self.service_bundle.graph.clone();
-        let mysql_pool = self.service_bundle.mysql_pool.clone();
 
-        let graph = GraphLayer::new(graph);
-        let relational = RelationalLayer::new(mysql_pool);
-
-        let neo4j_model = neo4j_impl::specie::SpecieModel::new(graph);
-        let mysql_model = mysql_impl::specie::SpecieModel::new(relational);
+        let neo4j_model = self.service_bundle.neo4j_model_provider.specie.clone();
+        let mysql_model = self.service_bundle.mysql_model_provider.specie.clone();
 
         let species = mysql_model.fetch().await?;
         let mut affected = 0;

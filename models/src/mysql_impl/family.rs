@@ -5,6 +5,7 @@ use crate::{
 
 use super::{query::QueryBuilder, relational_layer::RelationalOps};
 
+#[derive(Clone)]
 pub struct FamilyModel<Conn> {
     conn: Conn,
 }
